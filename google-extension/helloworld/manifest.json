@@ -1,0 +1,29 @@
+{
+    "manifest_version": 3,
+    "name": "ChatGPT-like Extension",
+    "description": "A Chrome extension with a side chat panel.",
+    "version": "1.0",
+    "permissions": [
+      "activeTab",
+      "scripting",
+      "tabs"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["flexsearch.bundle.js","content.js"]
+      }
+    ],
+    "action": {
+      "default_icon": "hello_extensions.png"
+    },
+    "icons": {
+      "16": "hello_extensions.png",
+      "48": "hello_extensions.png",
+      "128": "hello_extensions.png"
+    }
+  }
+  
