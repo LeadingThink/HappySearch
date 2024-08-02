@@ -84,11 +84,17 @@ function createSearchBox() {
         if (query) {
             chrome.runtime.sendMessage({ action: 'search', query: query }, response => {
                 resultsDiv.innerHTML = ''; // 清空之前的搜索结果
-                response.results.forEach(result => {
-                    const resultDiv = document.createElement('div');
-                    resultDiv.textContent = result;
-                    resultsDiv.appendChild(resultDiv);
-                });
+                if (response && response.results) {
+                    response.results.forEach(result => {
+                        const resultDiv = document.createElement('div');
+                        // 确保 result 是字符串
+                        resultDiv.textContent = typeof result === 'string' ? result : JSON.stringify(result);
+                        resultsDiv.appendChild(resultDiv);
+                    });
+                } else {
+                    // 如果没有结果或出错，显示提示信息
+                    resultsDiv.textContent = '没有找到结果或出现错误';
+                }
             });
         }
     });

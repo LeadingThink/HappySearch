@@ -47,6 +47,35 @@ const index = new FlexSearch.Document({
   }
 });
 
+// Helper function to fetch data from IndexedDB by IDs
+function fetchFromIndexedDB(ids) {
+  console.log("Fetching from IndexedDB with IDs:", ids); // 调试行
+
+  return dbPromise.then(db => {
+    const tx = db.transaction('texts', 'readonly');
+    const store = tx.objectStore('texts');
+
+    // 使用 Promise.all 来处理所有请求
+    const requests = ids.map(id => {
+      const request = store.get(id);
+
+      return request.then(event => {
+        console.log("Fetched data for ID:", id, event.pageData); // 调试行
+        return event.pageData;
+      }).catch(error => {
+        console.error("Error fetching data for ID:", id, error); // 调试行
+        return null;
+      });
+    });
+
+    return Promise.all(requests);
+  }).catch(error => {
+    console.error("Error accessing IndexedDB:", error);
+    return [];
+  });
+}
+
+
 // 处理来自内容脚本的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'sendPageText') {
@@ -160,12 +189,13 @@ chrome.runtime.onInstalled.addListener(() => {
 function search(query) {
   try {
     // 执行搜索并返回包含所有信息的结果
-    const results = index.search(query, { enrich : true },{ index: ["title", "text"] });
-    return results.map(result => {
-      // 返回搜索到的文档中的存储信息
-      const { title, link, text } = result.pageData;
-      return { title, link, text };
-    });
+    const results = index.search(query, { enrich : true, index: ["title", "text"] });
+    
+    // Collect IDs from the search results
+    const ids = results.flatMap(result => result.result);
+    
+    // Return the IDs for further data fetching
+    return ids;
   } catch (error) {
     console.error("Search error:", error);
     return [];
@@ -175,8 +205,15 @@ function search(query) {
 // 监听来自内容脚本的搜索请求
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'search') {
-    const results = search(request.query);
-    sendResponse({ results });
-    return true;  // 异步响应
+    const ids = search(request.query);
+    fetchFromIndexedDB(ids).then(results => {
+      const validResults = results.filter(result => result !== null);
+      // 使用 JSON.stringify 来确保对象以字符串形式正确显示
+      sendResponse({ results: validResults });
+    }).catch(error => {
+      console.error("Error fetching search results:", error);
+      sendResponse({ results: '[]' });  // 发送一个空数组的字符串表示
+    });
+    return true;  // 保持通道打开以等待异步响应
   }
 });
