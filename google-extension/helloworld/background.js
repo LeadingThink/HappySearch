@@ -20,26 +20,22 @@ function customEncode(str) {
 
 // 创建一个复合索引，以便使用多个字段进行搜索
 const index = new FlexSearch.Document({
-  tokenize: "strict",
+  tokenize: "strict", // 更改默认分词方式为 strict
   optimize: true,
   resolution: 9,
   document: {
-    id: "id", // 设置文档的唯一标识符
+    id: "id",
     index: [{
       field: "title",
       encode: customEncode,
-      tokenize: "forward",
+      tokenize: "strict", // 如果需要也可以在 title 使用 strict
       optimize: true
     }, {
       field: "text",
       encode: customEncode,
-      tokenize: "strict",
-      optimize: true,
-      minlength: 3,
-      context: {
-        depth: 1,
-        resolution: 3
-      }
+      tokenize: "strict", // 改为 strict
+      optimize: true
+      // 可以移除 minlength 以确保短词被索引
     }, {
       field: "link",
       tokenize: "forward"
